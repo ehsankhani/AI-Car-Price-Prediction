@@ -11,6 +11,7 @@ from sklearn.metrics import mean_absolute_error, r2_score
 import joblib
 import re
 import warnings
+import os
 warnings.filterwarnings('ignore')
 
 def clean_numeric_column(series, column_name):
@@ -140,7 +141,8 @@ def clean_engine_size_column(series):
 
 # 1. Load Data
 print("Loading data...")
-data = pd.read_csv('Sport car price.csv')
+data_path = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'sport_car_price.csv')
+data = pd.read_csv(data_path)
 print(f"Loaded {len(data)} rows of data")
 
 # Clean up column names
@@ -278,8 +280,11 @@ for i, (feature, importance) in enumerate(feature_importance[:10]):
 
 # 8. Save the Model
 print("\n=== Saving Model ===")
-joblib.dump(model, 'car_price_model.joblib')
-print("Model saved to car_price_model.joblib")
+models_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'models')
+os.makedirs(models_dir, exist_ok=True)
+model_path = os.path.join(models_dir, 'car_price_model.joblib')
+joblib.dump(model, model_path)
+print(f"Model saved to {model_path}")
 
 # Save feature information for later use
 model_info = {
@@ -295,8 +300,9 @@ model_info = {
     }
 }
 
-joblib.dump(model_info, 'car_price_model_info.joblib')
-print("Model info saved to car_price_model_info.joblib")
+model_info_path = os.path.join(models_dir, 'car_price_model_info.joblib')
+joblib.dump(model_info, model_info_path)
+print(f"Model info saved to {model_info_path}")
 
 print("\n=== Training Complete ===")
 print(f"Model is ready to use!")

@@ -1,5 +1,5 @@
 import uvicorn
-from main_api import app
+from .main_api import app
 
 if __name__ == "__main__":
     # Runs the Uvicorn server when the script is executed

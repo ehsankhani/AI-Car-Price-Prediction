@@ -15,7 +15,9 @@ app = FastAPI(
 
 # 2. Load the trained model
 # This model is a pipeline that includes preprocessing and the regressor
-model = joblib.load('car_price_model.joblib')
+import os
+model_path = os.path.join(os.path.dirname(__file__), '..', '..', 'models', 'car_price_model.joblib')
+model = joblib.load(model_path)
 print("Model loaded successfully.")
 
 # 3. Define the input data model using Pydantic
