@@ -5,6 +5,7 @@ from pydantic import BaseModel
 import joblib
 import pandas as pd
 import os
+import uvicorn
 
 # 1. Initialize FastAPI app
 app = FastAPI(
@@ -416,3 +417,9 @@ def predict_price(features: CarFeatures):
         print(f"Prediction error: {str(e)}")
         print(f"Input data: {input_data if 'input_data' in locals() else 'Not created'}")
         return {"error": f"Prediction failed: {str(e)}", "predicted_price_usd": 0}
+
+if __name__ == "__main__":
+    # Runs the Uvicorn server when the script is executed
+    # host="0.0.0.0" makes it accessible on your network
+    # reload=True automatically restarts the server on code changes
+    uvicorn.run(app, host="0.0.0.0", port=5000)
