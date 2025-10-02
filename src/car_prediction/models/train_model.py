@@ -141,7 +141,7 @@ def clean_engine_size_column(series):
 
 # 1. Load Data
 print("Loading data...")
-data_path = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'sport_car_price.csv')
+data_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'data', 'sport_car_price.csv')
 data = pd.read_csv(data_path)
 print(f"Loaded {len(data)} rows of data")
 
@@ -280,7 +280,7 @@ for i, (feature, importance) in enumerate(feature_importance[:10]):
 
 # 8. Save the Model
 print("\n=== Saving Model ===")
-models_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'models')
+models_dir = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'models')
 os.makedirs(models_dir, exist_ok=True)
 model_path = os.path.join(models_dir, 'car_price_model.joblib')
 joblib.dump(model, model_path)

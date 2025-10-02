@@ -19,6 +19,14 @@ services:
       start_period: 40s
     networks:
       - car-price-network
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
 
   car-price-frontend:
     build: ./frontend
@@ -37,6 +45,14 @@ services:
       start_period: 40s
     networks:
       - car-price-network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
 
   nginx:
     image: nginx:alpine
@@ -48,6 +64,7 @@ services:
       - ./ssl:/etc/nginx/ssl:ro
     depends_on:
       - car-price-api
+      - car-price-frontend
     restart: unless-stopped
     networks:
       - car-price-network
@@ -56,12 +73,13 @@ services:
     image: prom/prometheus:latest
     ports:
       - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
       - '--web.console.libraries=/etc/prometheus/console_libraries'
       - '--web.console.templates=/etc/prometheus/consoles'
-      - '--web.enable-lifecycle'
     restart: unless-stopped
     networks:
       - car-price-network

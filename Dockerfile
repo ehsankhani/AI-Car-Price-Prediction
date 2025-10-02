@@ -14,13 +14,12 @@ RUN apt-get update && apt-get install -y \
 # Create non-root user
 RUN useradd --create-home --shell /bin/bash app
 
-# Copy requirements first for better caching
-COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
-
 # Copy source code
 COPY . .
+
+# Install dependencies
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -e .
 
 # Change ownership to app user
 RUN chown -R app:app /app
@@ -36,4 +35,4 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:5000/health || exit 1
 
 # Run application
-CMD ["python", "src/api/app.py"]
+CMD ["python", "src/car_prediction/main.py"]

@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import joblib
 import pandas as pd
@@ -14,6 +15,15 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
+
 # 2. Load the trained model
 # This model is a pipeline that includes preprocessing and the regressor
 import os
@@ -24,13 +34,13 @@ print("Model loaded successfully.")
 # 3. Define the input data model using Pydantic
 # This ensures that the input data is valid
 class CarFeatures(BaseModel):
-    car_make: str
-    car_model: str
-    year: int
-    engine_size: float
-    horsepower: int
-    torque: int
-    zero_to_sixty_time: float
+    car_make: str = "Porsche"
+    car_model: str = "911"
+    year: int = 2022
+    engine_size: float = 3.0
+    horsepower: int = 379
+    torque: int = 331
+    zero_to_sixty_time: float = 4.0
     
     class Config:
         # Example to show in the API docs
