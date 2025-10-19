@@ -1,8 +1,8 @@
-import React, { Suspense } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { Toaster } from 'react-hot-toast';
 import CarPredictionForm from './components/CarPredictionForm';
-import Background3D from './components/Background3D';
+import ImageBackground from './components/ImageBackground';
 import Header from './components/Header';
 import ParticleBackground from './components/ParticleBackground';
 
@@ -12,10 +12,8 @@ function App() {
       {/* Particle Background */}
       <ParticleBackground />
       
-      {/* 3D Background */}
-      <Suspense fallback={null}>
-        <Background3D />
-      </Suspense>
+      {/* Image Background */}
+      <ImageBackground />
       
       {/* Main Content */}
       <div className="relative z-10">

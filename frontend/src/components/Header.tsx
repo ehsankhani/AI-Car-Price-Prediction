@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Car, Zap, TrendingUp } from 'lucide-react';
+import { Car } from 'lucide-react';
 
 const Header: React.FC = () => {
   return (
@@ -28,48 +28,51 @@ const Header: React.FC = () => {
         </div>
       </motion.div>
 
-      <motion.h1
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.4 }}
-        className="text-6xl md:text-7xl font-bold mb-4"
+        className="glass rounded-3xl p-8 shadow-2xl mb-8 max-w-4xl mx-auto"
       >
-        <span className="gradient-text text-3d">AI Car</span>
-        <br />
-        <span className="neon-glow text-3d">Predictor</span>
-      </motion.h1>
+        <motion.h1
+          initial={{ scale: 0.9 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 0.6, delay: 0.6 }}
+          className="text-5xl md:text-6xl font-bold text-center"
+        >
+          <span className="text-white block mb-2">AI Car</span>
+          <span className="text-white/90 block text-4xl md:text-5xl font-semibold">Predictor</span>
+        </motion.h1>
+        
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.8 }}
+          className="flex justify-center items-center space-x-6 mt-6"
+        >
+          <div className="flex items-center space-x-2">
+            <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+            <span className="text-white/70 text-sm">AI-Powered</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+            <span className="text-white/70 text-sm">Instant Results</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-2 h-2 bg-pink-400 rounded-full"></div>
+            <span className="text-white/70 text-sm">Sports Cars</span>
+          </div>
+        </motion.div>
+      </motion.div>
 
       <motion.p
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 0.6 }}
-        className="text-xl text-white mb-8 max-w-2xl mx-auto font-medium"
-        style={{
-          textShadow: '0 2px 4px rgba(0,0,0,0.5), 0 0 10px rgba(255,255,255,0.3)'
-        }}
+        transition={{ duration: 0.8, delay: 1.0 }}
+        className="text-xl text-white/80 mb-8 max-w-2xl mx-auto font-medium text-center"
       >
         Get instant, accurate price predictions for sports cars using cutting-edge AI technology
       </motion.p>
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 0.8 }}
-        className="flex justify-center items-center space-x-8 text-white/60"
-      >
-        <div className="flex items-center space-x-2">
-          <Zap className="w-5 h-5 text-yellow-400" />
-          <span className="text-sm">Instant Results</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          <TrendingUp className="w-5 h-5 text-green-400" />
-          <span className="text-sm">AI-Powered</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Car className="w-5 h-5 text-blue-400" />
-          <span className="text-sm">Sports Cars</span>
-        </div>
-      </motion.div>
     </motion.header>
   );
 };

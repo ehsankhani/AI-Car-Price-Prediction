@@ -3,13 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "dependencies": {
-    "@react-three/fiber": "^8.15.12",
-    "@react-three/drei": "^9.88.13",
-    "@types/three": "^0.160.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
-    "three": "^0.160.0",
     "framer-motion": "^10.16.16",
     "lucide-react": "^0.294.0",
     "axios": "^1.6.2",

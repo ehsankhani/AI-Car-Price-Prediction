@@ -17,8 +17,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-    networks:
-      - car-price-network
 
   car-price-frontend:
     build: ./frontend
@@ -35,52 +33,3 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-    networks:
-      - car-price-network
-
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./ssl:/etc/nginx/ssl:ro
-    depends_on:
-      - car-price-api
-    restart: unless-stopped
-    networks:
-      - car-price-network
-
-  prometheus:
-    image: prom/prometheus:latest
-    ports:
-      - "9090:9090"
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-      - '--web.enable-lifecycle'
-    restart: unless-stopped
-    networks:
-      - car-price-network
-
-  grafana:
-    image: grafana/grafana:latest
-    ports:
-      - "3001:3000"
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-    volumes:
-      - grafana-storage:/var/lib/grafana
-    restart: unless-stopped
-    networks:
-      - car-price-network
-
-networks:
-  car-price-network:
-    driver: bridge
-
-volumes:
-  grafana-storage:

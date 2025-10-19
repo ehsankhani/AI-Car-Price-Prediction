@@ -43,13 +43,12 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-/* Gradient text */
+/* Gradient text - Clean modern style */
 .gradient-text {
-  background: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 50%, #45b7d1 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  text-shadow: 0 0 30px rgba(255, 107, 107, 0.5);
 }
 
 /* 3D Text Effect */
@@ -69,16 +68,10 @@ body {
     0 20px 20px rgba(0,0,0,.15);
 }
 
-/* Neon glow effect */
+/* Modern glow effect */
 .neon-glow {
-  color: #fff;
-  text-shadow:
-    0 0 5px #fff,
-    0 0 10px #fff,
-    0 0 15px #ff6b6b,
-    0 0 20px #ff6b6b,
-    0 0 35px #ff6b6b,
-    0 0 40px #ff6b6b;
+  color: #ffffff;
+  text-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
 }
 
 /* Loading animation */
