@@ -25,7 +25,7 @@ A modern, full-stack web application that uses machine learning to predict sport
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/car-price-prediction.git
+git clone https://github.com/ehsankhani/car-price-prediction.git
 cd car-price-prediction
 
 # Start with Docker Compose
