@@ -37,11 +37,11 @@ const ThreeBackground: React.FC<ThreeBackgroundProps> = ({
   const mousePositionRef = useRef({ x: 0, y: 0 });
   const targetRotationRef = useRef({ x: 0, y: 0 });
   const currentRotationRef = useRef({ x: 0, y: 0 });
+  const baseRotationRef = useRef({ x: 0, y: Math.PI });
   const [isHovering, setIsHovering] = useState(false);
   const [isAutoRotating, setIsAutoRotating] = useState(false);
-  const [autoRotationSpeed, setAutoRotationSpeed] = useState(0.01);
   const isAutoRotatingRef = useRef(false);
-  const autoRotationSpeedRef = useRef(0.01);
+  // Auto-controls removed: using constant slow rotation instead
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -52,13 +52,19 @@ const ThreeBackground: React.FC<ThreeBackgroundProps> = ({
     scene.background = null; // Keep transparent, overlay handled by parent
 
     const camera = new THREE.PerspectiveCamera(
-      45,
+      20,
       container.clientWidth / container.clientHeight,
       0.1,
       1000
     );
-    camera.position.set(0, 1.5, 6);
-    camera.lookAt(0, 0, 0); // Look at the center of the model
+    // Camera angle guide:
+    // - Distance (z): smaller = closer, larger = farther. Example: camera.position.set(0, 3, 3)
+    // - Height   (y): larger = view from above; smaller/negative = from below. Example: camera.position.set(0, 6, 4)
+    // - Side     (x): positive = from right; negative = from left. Example: camera.position.set(2, 4, 6)
+    // - FOV (first arg of PerspectiveCamera): larger = wider view (e.g., 45 or 60). Example: new THREE.PerspectiveCamera(45, aspect, 0.1, 1000)
+    // Keep camera.lookAt(0, 0, 0) so it points at model center after adjusting position/FOV.
+    camera.position.set(10, 5, 6);
+    camera.lookAt(0, 3, 0); // Always point to the model center
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -88,27 +94,34 @@ const ThreeBackground: React.FC<ThreeBackgroundProps> = ({
     });
 
     // Enhanced Lighting
-    const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+    const ambient = new THREE.AmbientLight(0xffffff, 0.35);
     scene.add(ambient);
     
-    const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+    const dir = new THREE.DirectionalLight(0xffffff, 0.9);
     dir.position.set(5, 10, 7);
     dir.castShadow = true;
     dir.shadow.mapSize.width = 2048;
     dir.shadow.mapSize.height = 2048;
     scene.add(dir);
 
+    // Rim light to highlight edges and show more details
+    const rimLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    rimLight.position.set(-6, 3, -5);
+    scene.add(rimLight);
+
     // Spot light for dramatic effect
-    const spotLight = new THREE.SpotLight(0xffffff, 1.5);
-    spotLight.position.set(5, 10, 5);
+    const spotLight = new THREE.SpotLight(0xffffff, 1.2);
+    spotLight.position.set(5, 9, 5);
     spotLight.castShadow = true;
     spotLight.shadow.mapSize.width = 1024;
     spotLight.shadow.mapSize.height = 1024;
     scene.add(spotLight);
 
-    // Model group for rotation - start with front facing the camera
+    // Model group container (kept neutral); car object will handle its own rotation
     const modelGroup = new THREE.Group();
-    modelGroup.rotation.y = initialRotationY + Math.PI; // Rotate 180 degrees to show front
+    // Set base orientation so the front of the car faces the camera at load
+    // If the car still shows the back, adjust this by +/- Math.PI/2
+    baseRotationRef.current = { x: 0, y: - Math.PI/2 };
     scene.add(modelGroup);
     modelGroupRef.current = modelGroup;
 
@@ -137,8 +150,27 @@ const ThreeBackground: React.FC<ThreeBackgroundProps> = ({
           }
         });
 
+        // CAR MATERIAL OVERRIDE GUIDE:
+        // To force a custom paint on the car, uncomment below and adjust color/metalness/roughness.
+        // This will override original GLB materials.
+        // object3d.traverse(child => {
+        //   const m = child as THREE.Mesh;
+        //   if ((m as THREE.Mesh).isMesh) {
+        //     m.material = new THREE.MeshPhysicalMaterial({
+        //       color: new THREE.Color('#ff2a2a'), // car color
+        //       metalness: 0.9,
+        //       roughness: 0.3,
+        //       clearcoat: 1.0,
+        //       clearcoatRoughness: 0.05
+        //     });
+        //   }
+        // });
+
         modelGroup.add(object3d);
         carModelRef.current = object3d;
+        // Ensure default orientation at load and set rotation order to avoid gimbal issues
+        carModelRef.current.rotation.order = 'YXZ';
+        carModelRef.current.rotation.y = baseRotationRef.current.y;
     };
 
     if (isGlb) {
@@ -166,42 +198,33 @@ const ThreeBackground: React.FC<ThreeBackgroundProps> = ({
       );
     }
 
-    // Mouse interaction for rotation and hover effects
+    // Mouse interaction: simple left/right rotation only (no up/down flipping)
+    const lastNormRef = { nx: 0, ny: 0 } as { nx: number; ny: number };
     const onMouseMove = (event: MouseEvent) => {
       if (!container) return;
-      
-      // Get container bounds for relative positioning
-      const rect = container.getBoundingClientRect();
-      const relativeX = event.clientX - rect.left;
-      const relativeY = event.clientY - rect.top;
-      
-      // Calculate normalized mouse position (-1 to 1) relative to container
-      const x = (relativeX / rect.width) * 2 - 1;
-      const y = -(relativeY / rect.height) * 2 + 1;
-      
-      // Update ref for immediate access in animation loop
-      mousePositionRef.current = { x, y };
-      
-      // Set target rotation based on mouse position (smoother control)
-      const rotationSensitivity = 1.5;
-      targetRotationRef.current = {
-        x: y * rotationSensitivity * 0.6, // More vertical rotation
-        y: x * rotationSensitivity
-      };
-      
-      mouse.x = x;
-      mouse.y = y;
 
+      // Relative deltas (work like touchpad movement)
+      const dx = (event.movementX ?? 0);
+
+      // Sensitivity for left/right rotation only
+      const yawSensitivity = 0.004;   // left/right
+
+      // Accumulate target rotation from deltas (only yaw, no pitch)
+      targetRotationRef.current.y += dx * yawSensitivity;      // infinite yaw only
+      targetRotationRef.current.x = 0; // Always keep pitch at 0 (no flipping)
+
+      // Keep hover feedback using raycaster
+      const rect = container.getBoundingClientRect();
+      const nx = (event.clientX - rect.left) / rect.width * 2 - 1;
+      const ny = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      lastNormRef.nx = nx;
+      lastNormRef.ny = ny;
+      mouse.x = nx;
+      mouse.y = ny;
       raycaster.setFromCamera(mouse, camera);
-      
       if (carModelRef.current) {
         const intersects = raycaster.intersectObject(carModelRef.current, true);
-
-        if (intersects.length > 0) {
-          setIsHovering(true);
-        } else {
-          setIsHovering(false);
-        }
+        setIsHovering(intersects.length > 0);
       }
     };
 
@@ -220,6 +243,21 @@ const ThreeBackground: React.FC<ThreeBackgroundProps> = ({
       camera.position.copy(direction.multiplyScalar(newDistance));
     };
 
+    // Add a ground plane to receive shadows (makes the model pop)
+    // GROUND GUIDE: change color/roughness/metalness here
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(200, 200),
+      new THREE.MeshStandardMaterial({
+        color: new THREE.Color('#111111'), // ground color
+        roughness: 0.9,
+        metalness: 0.0
+      })
+    );
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = -0.01;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
     // Handle resize
     const onResize = () => {
       if (!container) return;
@@ -228,6 +266,9 @@ const ThreeBackground: React.FC<ThreeBackgroundProps> = ({
       renderer.setSize(container.clientWidth, container.clientHeight);
     };
     
+    // Sync auto-rotate ref with current state
+    isAutoRotatingRef.current = isAutoRotating;
+
     // Add event listeners to window for global mouse tracking
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('wheel', onWheel, { passive: false });
@@ -244,34 +285,32 @@ const ThreeBackground: React.FC<ThreeBackgroundProps> = ({
       // Smooth rotation interpolation
       const lerpFactor = 0.1; // Smoothness factor (0.01 = very smooth, 0.1 = snappy)
       
+      const target = carModelRef.current ?? modelGroup; // Prefer moving the car object itself
+
+      // Auto-spin toggled by button
       if (isAutoRotatingRef.current) {
-        // Auto rotation mode - continuous rotation
-        modelGroup.rotation.y += autoRotationSpeedRef.current;
-        // Reset manual rotation when auto starts
-        currentRotationRef.current = { x: 0, y: 0 };
-        targetRotationRef.current = { x: 0, y: 0 };
-        
-        // Debug auto rotation
-        if (Math.random() < 0.01) { // Log 1% of the time
-          console.log('Auto rotating, speed:', autoRotationSpeedRef.current, 'rotation.y:', modelGroup.rotation.y);
-        }
-      } else if (enableHover) {
-        // Manual mouse control with smooth interpolation
-        currentRotationRef.current.x += (targetRotationRef.current.x - currentRotationRef.current.x) * lerpFactor;
+        target.rotation.y += 0.01; // fixed cool speed
+      }
+
+      if (enableHover && !isAutoRotatingRef.current) {
+        // Manual mouse control - smooth interpolation for yaw only (no pitch)
         currentRotationRef.current.y += (targetRotationRef.current.y - currentRotationRef.current.y) * lerpFactor;
         
-        modelGroup.rotation.x = currentRotationRef.current.x;
-        modelGroup.rotation.y = currentRotationRef.current.y;
-        
-        // Debug manual rotation
-        if (Math.random() < 0.01) { // Log 1% of the time
-          console.log('Manual control, target:', targetRotationRef.current, 'current:', currentRotationRef.current);
+        // Only apply yaw rotation (left/right), keep pitch at 0 (no flipping)
+        target.rotation.x = baseRotationRef.current.x; // Always 0 (no up/down rotation)
+        target.rotation.y = baseRotationRef.current.y + currentRotationRef.current.y;
+
+        // Edge scrolling (infinite left/right movement near screen edges)
+        const edgeThreshold = 0.9; // near edges of the canvas
+        const edgeYawSpeed = 0.02;
+        if (Math.abs((lastNormRef as any).nx) > edgeThreshold) {
+          targetRotationRef.current.y += ((lastNormRef as any).nx > 0 ? 1 : -1) * edgeYawSpeed;
         }
       }
 
       // Scale effect on hover
-      const targetScale = isHovering && enableHover ? 1.06 : 1.0;
-      modelGroup.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.08);
+      const hoverScale = isHovering && enableHover ? 1.06 : 1.0;
+      target.scale.lerp(new THREE.Vector3(hoverScale, hoverScale, hoverScale), 0.08);
       
       renderer.render(scene, camera);
       animationFrameIdRef.current = requestAnimationFrame(animate);
@@ -302,50 +341,19 @@ const ThreeBackground: React.FC<ThreeBackgroundProps> = ({
         onMouseLeave={() => setIsHovering(false)}
       />
       
-      {/* Control Panel */}
-      <div className="absolute top-4 right-4 z-10 bg-black/20 backdrop-blur-sm rounded-lg p-3 border border-white/20">
-        <div className="flex flex-col gap-2">
-          <button
-            onClick={() => {
-              const newState = !isAutoRotatingRef.current;
-              isAutoRotatingRef.current = newState;
-              setIsAutoRotating(newState);
-              console.log('Button clicked, new state:', newState);
-            }}
-            className={`px-3 py-2 rounded text-sm font-medium transition-all ${
-              isAutoRotating 
-                ? 'bg-red-500/80 hover:bg-red-600/80 text-white' 
-                : 'bg-green-500/80 hover:bg-green-600/80 text-white'
-            }`}
-          >
-            {isAutoRotating ? 'Stop Auto' : 'Start Auto'}
-          </button>
-          
-          <div className="flex items-center gap-2">
-            <label className="text-white text-xs">Speed:</label>
-            <input
-              type="range"
-              min="0.005"
-              max="0.05"
-              step="0.005"
-              value={autoRotationSpeed}
-              onChange={(e) => {
-                const newSpeed = parseFloat(e.target.value);
-                autoRotationSpeedRef.current = newSpeed;
-                setAutoRotationSpeed(newSpeed);
-                console.log('Speed changed to:', newSpeed);
-              }}
-              className="w-16"
-            />
-            <span className="text-white text-xs">{autoRotationSpeed.toFixed(3)}</span>
-          </div>
-          
-          <div className="text-white text-xs">
-            <div>Mouse: Move to rotate</div>
-            <div>Scroll: Zoom in/out</div>
-            <div>Auto: Continuous rotation</div>
-          </div>
-        </div>
+      {/* Toggle Auto-Spin Button */}
+      <div className="absolute bottom-6 left-6 z-20">
+        <button
+          onClick={() => {
+            const next = !isAutoRotatingRef.current;
+            isAutoRotatingRef.current = next;
+            setIsAutoRotating(next);
+          }}
+          className={`px-4 py-2 rounded-xl text-sm font-semibold shadow-lg transition-all backdrop-blur-sm border
+            ${isAutoRotating ? 'bg-purple-600/90 hover:bg-purple-600 text-white border-white/20' : 'bg-white/15 hover:bg-white/25 text-white border-white/30'}`}
+        >
+          {isAutoRotating ? 'Stop Spin' : 'Start Spin'}
+        </button>
       </div>
     </div>
   );

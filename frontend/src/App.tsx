@@ -46,11 +46,7 @@ function App() {
                     >
                       Local 3D model rendered in real-time. Hover to bring it to life. Continue to pricing predictions when ready.
                     </motion.p>
-                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 0.2 }}>
-                      <Link to="/predict" className="inline-block px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all">
-                        Go to Prediction
-                      </Link>
-                    </motion.div>
+                    {/* Removed 'Go to Prediction' button as requested */}
                   </main>
                 </div>
               </>
