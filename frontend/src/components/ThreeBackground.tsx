@@ -18,6 +18,7 @@ type ThreeBackgroundProps = {
   colorHex?: string; // hex color for mesh material
   enableHover?: boolean;
   initialRotationY?: number;
+  onIntroComplete?: () => void;
 };
 
 const ThreeBackground: React.FC<ThreeBackgroundProps> = ({
@@ -26,6 +27,7 @@ const ThreeBackground: React.FC<ThreeBackgroundProps> = ({
   colorHex = '#e5e7eb',
   enableHover = true,
   initialRotationY = 0,
+  onIntroComplete,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -41,6 +43,16 @@ const ThreeBackground: React.FC<ThreeBackgroundProps> = ({
   const [isHovering, setIsHovering] = useState(false);
   const [isAutoRotating, setIsAutoRotating] = useState(false);
   const isAutoRotatingRef = useRef(false);
+  // Intro spiral/orbit state
+  const isIntroRef = useRef(true);
+  const introStartRef = useRef<number | null>(null);
+  const introDurationMsRef = useRef(2500);
+  const introFromRef = useRef({ radius: 20, y: 10, theta: -Math.PI / 2 });
+  // Precompute the ending theta so the last intro frame matches final camera exactly (no snap)
+  const endThetaRef = useRef<number | null>(null);
+  const firedIntroCbRef = useRef(false);
+  const [showSpinUi, setShowSpinUi] = useState(false);
+  const mouseUnlockAtRef = useRef<number | null>(null);
   // Auto-controls removed: using constant slow rotation instead
 
   useEffect(() => {
@@ -63,8 +75,15 @@ const ThreeBackground: React.FC<ThreeBackgroundProps> = ({
     // - Side     (x): positive = from right; negative = from left. Example: camera.position.set(2, 4, 6)
     // - FOV (first arg of PerspectiveCamera): larger = wider view (e.g., 45 or 60). Example: new THREE.PerspectiveCamera(45, aspect, 0.1, 1000)
     // Keep camera.lookAt(0, 0, 0) so it points at model center after adjusting position/FOV.
-    camera.position.set(10, 5, 6);
-    camera.lookAt(0, 3, 0); // Always point to the model center
+    const finalCamPos = new THREE.Vector3(10, 5, 6);
+    const finalCamLook = new THREE.Vector3(1, 3, 0);
+    // Angle around look target that corresponds to final camera position
+    endThetaRef.current = Math.atan2(
+      finalCamPos.z - finalCamLook.z,
+      finalCamPos.x - finalCamLook.x
+    ) + Math.PI * 2; // + one full turn for a complete orbit
+    camera.position.copy(finalCamPos);
+    camera.lookAt(finalCamLook); // Always point to the model center
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -201,6 +220,8 @@ const ThreeBackground: React.FC<ThreeBackgroundProps> = ({
     // Mouse interaction: simple left/right rotation only (no up/down flipping)
     const lastNormRef = { nx: 0, ny: 0 } as { nx: number; ny: number };
     const onMouseMove = (event: MouseEvent) => {
+      if (isIntroRef.current) return; // disable mouse during intro
+      if (mouseUnlockAtRef.current && performance.now() < mouseUnlockAtRef.current) return; // small post-intro delay
       if (!container) return;
 
       // Relative deltas (work like touchpad movement)
@@ -231,6 +252,8 @@ const ThreeBackground: React.FC<ThreeBackgroundProps> = ({
     // Mouse wheel zoom
     const onWheel = (event: WheelEvent) => {
       event.preventDefault();
+      if (isIntroRef.current) return; // disable during intro
+      if (mouseUnlockAtRef.current && performance.now() < mouseUnlockAtRef.current) return; // small post-intro delay
       const zoomSpeed = 0.1;
       const zoomDirection = event.deltaY > 0 ? 1 : -1;
       
@@ -287,6 +310,40 @@ const ThreeBackground: React.FC<ThreeBackgroundProps> = ({
       
       const target = carModelRef.current ?? modelGroup; // Prefer moving the car object itself
 
+      // Intro spiral/orbit: circle while moving inward, then end exactly at finalCamPos/finalCamLook
+      if (isIntroRef.current) {
+        if (introStartRef.current === null) introStartRef.current = performance.now();
+        const now = performance.now();
+        const elapsed = now - (introStartRef.current || now);
+        const t = Math.min(1, elapsed / introDurationMsRef.current);
+        const ease = t * t * (3 - 2 * t); // smoothstep
+        const from = introFromRef.current;
+        const toRadius = Math.hypot(finalCamPos.x - finalCamLook.x, finalCamPos.z - finalCamLook.z);
+        const radius = from.radius + (toRadius - from.radius) * ease;
+        const targetEndTheta = endThetaRef.current ?? Math.atan2(
+          finalCamPos.z - finalCamLook.z,
+          finalCamPos.x - finalCamLook.x
+        );
+        const theta = from.theta + (targetEndTheta - from.theta) * ease; // finish exactly aligned
+        const y = from.y + (finalCamPos.y - from.y) * ease;
+        const x = finalCamLook.x + radius * Math.cos(theta);
+        const z = finalCamLook.z + radius * Math.sin(theta);
+        camera.position.set(x, y, z);
+        camera.lookAt(finalCamLook);
+        if (t >= 1) {
+          // End intro without any snap (camera already equals final pose)
+          isIntroRef.current = false;
+          // Add a small delay before enabling mouse and showing UI for better feel
+          const delayMs = 600;
+          mouseUnlockAtRef.current = performance.now() + delayMs;
+          setTimeout(() => setShowSpinUi(true), delayMs);
+          if (!firedIntroCbRef.current) {
+            firedIntroCbRef.current = true;
+            onIntroComplete && onIntroComplete();
+          }
+        }
+      }
+
       // Auto-spin toggled by button
       if (isAutoRotatingRef.current) {
         target.rotation.y += 0.01; // fixed cool speed
@@ -341,20 +398,22 @@ const ThreeBackground: React.FC<ThreeBackgroundProps> = ({
         onMouseLeave={() => setIsHovering(false)}
       />
       
-      {/* Toggle Auto-Spin Button */}
-      <div className="absolute bottom-6 left-6 z-20">
-        <button
-          onClick={() => {
-            const next = !isAutoRotatingRef.current;
-            isAutoRotatingRef.current = next;
-            setIsAutoRotating(next);
-          }}
-          className={`px-4 py-2 rounded-xl text-sm font-semibold shadow-lg transition-all backdrop-blur-sm border
-            ${isAutoRotating ? 'bg-purple-600/90 hover:bg-purple-600 text-white border-white/20' : 'bg-white/15 hover:bg-white/25 text-white border-white/30'}`}
-        >
-          {isAutoRotating ? 'Stop Spin' : 'Start Spin'}
-        </button>
-      </div>
+      {/* Toggle Auto-Spin Button (hidden during intro and brief post-intro delay) */}
+      {showSpinUi && (
+        <div className="absolute bottom-6 left-6 z-20">
+          <button
+            onClick={() => {
+              const next = !isAutoRotatingRef.current;
+              isAutoRotatingRef.current = next;
+              setIsAutoRotating(next);
+            }}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold shadow-lg transition-all backdrop-blur-sm border
+              ${isAutoRotating ? 'bg-purple-600/90 hover:bg-purple-600 text-white border-white/20' : 'bg-white/15 hover:bg-white/25 text-white border-white/30'}`}
+          >
+            {isAutoRotating ? 'Stop Spin' : 'Start Spin'}
+          </button>
+        </div>
+      )}
     </div>
   );
 };
