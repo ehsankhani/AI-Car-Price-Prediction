@@ -1,38 +1,29 @@
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 import joblib
 import pandas as pd
 import os
 import uvicorn
 
-# 1. Initialize FastAPI app
 app = FastAPI(
     title="Car Price Prediction API",
     description="An API to predict car prices using a machine learning model.",
     version="1.0.0"
 )
 
-# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods
-    allow_headers=["*"],  # Allows all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-# 2. Load the trained model
-# This model is a pipeline that includes preprocessing and the regressor
-import os
 model_path = os.path.join(os.path.dirname(__file__), '..', '..', 'models', 'car_price_model.joblib')
 model = joblib.load(model_path)
-print("Model loaded successfully.")
 
-# 3. Define the input data model using Pydantic
-# This ensures that the input data is valid
 class CarFeatures(BaseModel):
     car_make: str = "Porsche"
     car_model: str = "911"
@@ -43,7 +34,6 @@ class CarFeatures(BaseModel):
     zero_to_sixty_time: float = 4.0
     
     class Config:
-        # Example to show in the API docs
         json_schema_extra = {
             "example": {
                 "car_make": "Porsche",
@@ -56,13 +46,8 @@ class CarFeatures(BaseModel):
             }
         }
 
-# 4. Define API endpoints
-
 @app.get("/", response_class=HTMLResponse)
 def read_root():
-    """
-    Root endpoint that serves the main car price prediction interface.
-    """
     html_content = """
     <!DOCTYPE html>
     <html lang="en">
@@ -382,27 +367,17 @@ def read_root():
 
 @app.get("/health")
 def health_check():
-    """
-    Health check endpoint to ensure the API is running.
-    """
     return {"status": "ok", "model_loaded": True, "message": "Car Price Prediction API is running!"}
 
 @app.post("/predict")
 def predict_price(features: CarFeatures):
-    """
-    Predicts the car price based on input features.
-    """
     try:
-        # Process engine size according to the training data logic
         def process_engine_size(engine_size):
             if engine_size == 0 or engine_size == 0.0:
                 return "Electric"
             else:
                 return str(float(engine_size))
         
-        # Convert the input data into a pandas DataFrame
-        # The column names must match the ones used during training
-        # Apply the same preprocessing logic as used during training
         input_data = pd.DataFrame([{
             "Car Make": str(features.car_make),
             "Car Model": str(features.car_model),
@@ -413,23 +388,11 @@ def predict_price(features: CarFeatures):
             "0-60 MPH Time (seconds)": float(features.zero_to_sixty_time)
         }])
         
-        print(f"Input data for prediction: {input_data}")
-        print(f"Data types: {input_data.dtypes}")
-        
-        # Use the loaded model pipeline to make a prediction
-        # The pipeline handles preprocessing and prediction
         prediction = model.predict(input_data)
-        
-        # Return the prediction in a JSON response
         return {"predicted_price_usd": round(prediction[0], 2)}
         
     except Exception as e:
-        print(f"Prediction error: {str(e)}")
-        print(f"Input data: {input_data if 'input_data' in locals() else 'Not created'}")
         return {"error": f"Prediction failed: {str(e)}", "predicted_price_usd": 0}
 
 if __name__ == "__main__":
-    # Runs the Uvicorn server when the script is executed
-    # host="0.0.0.0" makes it accessible on your network
-    # reload=True automatically restarts the server on code changes
     uvicorn.run(app, host="0.0.0.0", port=5000)

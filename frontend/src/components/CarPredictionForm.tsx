@@ -71,10 +71,6 @@ const CarPredictionForm: React.FC = () => {
         processedData.zero_to_sixty_time = parseFloat(data.zero_to_sixty_time.toString());
       }
       
-      console.log('API URL:', apiUrl);
-      console.log('Original data:', data);
-      console.log('Processed data:', processedData);
-      
       const response = await axios.post<PredictionResponse>(
         `${apiUrl}/predict`,
         processedData,
@@ -94,14 +90,6 @@ const CarPredictionForm: React.FC = () => {
       setShowResult(true);
       toast.success('Prediction completed successfully!');
     } catch (error: any) {
-      console.error('Prediction error:', error);
-      console.error('Error details:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        config: error.config
-      });
-      
       let errorMessage = 'Failed to get prediction. Please try again.';
       if (error.response?.data?.error) {
         errorMessage = error.response.data.error;
