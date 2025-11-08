@@ -10,7 +10,7 @@ import uvicorn
 app = FastAPI(
     title="Car Price Prediction API",
     description="An API to predict car prices using a machine learning model.",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 app.add_middleware(
@@ -21,8 +21,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-model_path = os.path.join(os.path.dirname(__file__), '..', '..', 'models', 'car_price_model.joblib')
+model_path = os.path.join(
+    os.path.dirname(__file__), "..", "..", "models", "car_price_model.joblib"
+)
 model = joblib.load(model_path)
+
 
 class CarFeatures(BaseModel):
     car_make: str = "Porsche"
@@ -32,7 +35,7 @@ class CarFeatures(BaseModel):
     horsepower: int = 379
     torque: int = 331
     zero_to_sixty_time: float = 4.0
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -42,9 +45,10 @@ class CarFeatures(BaseModel):
                 "engine_size": 3.0,
                 "horsepower": 379,
                 "torque": 331,
-                "zero_to_sixty_time": 4.0
+                "zero_to_sixty_time": 4.0,
             }
         }
+
 
 @app.get("/", response_class=HTMLResponse)
 def read_root():
@@ -365,34 +369,46 @@ def read_root():
     """
     return html_content
 
+
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "model_loaded": True, "message": "Car Price Prediction API is running!"}
+    return {
+        "status": "ok",
+        "model_loaded": True,
+        "message": "Car Price Prediction API is running!",
+    }
+
 
 @app.post("/predict")
 def predict_price(features: CarFeatures):
     try:
+
         def process_engine_size(engine_size):
             if engine_size == 0 or engine_size == 0.0:
                 return "Electric"
             else:
                 return str(float(engine_size))
-        
-        input_data = pd.DataFrame([{
-            "Car Make": str(features.car_make),
-            "Car Model": str(features.car_model),
-            "Year": float(features.year),
-            "Engine Size (L)": process_engine_size(features.engine_size),
-            "Horsepower": float(features.horsepower),
-            "Torque (lb-ft)": float(features.torque),
-            "0-60 MPH Time (seconds)": float(features.zero_to_sixty_time)
-        }])
-        
+
+        input_data = pd.DataFrame(
+            [
+                {
+                    "Car Make": str(features.car_make),
+                    "Car Model": str(features.car_model),
+                    "Year": float(features.year),
+                    "Engine Size (L)": process_engine_size(features.engine_size),
+                    "Horsepower": float(features.horsepower),
+                    "Torque (lb-ft)": float(features.torque),
+                    "0-60 MPH Time (seconds)": float(features.zero_to_sixty_time),
+                }
+            ]
+        )
+
         prediction = model.predict(input_data)
         return {"predicted_price_usd": round(prediction[0], 2)}
-        
+
     except Exception as e:
         return {"error": f"Prediction failed: {str(e)}", "predicted_price_usd": 0}
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=5000)
