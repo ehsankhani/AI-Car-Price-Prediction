@@ -31,7 +31,7 @@ A modern, full-stack web application that uses machine learning to predict sport
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/car-price-prediction.git
+git clone https://github.com/ehsankhani/AI-Car-Price-Prediction.git
 cd car-price-prediction
 
 # Start with Docker Compose
@@ -358,7 +358,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 If you encounter any issues or have questions:
 
-1. Check the [Issues](https://github.com/ehsankhani/ai-car-price-prediction/issues) page
+1. Check the [Issues](https://github.com/ehsankhani/AI-Car-Price-Prediction.git/issues) page
 2. Create a new issue with detailed information
 3. Contact the maintainers
 
@@ -420,7 +420,7 @@ npm start
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/ehsankhani/ai-car-price-prediction.git
+   git clone https://github.com/ehsankhani/AI-Car-Price-Prediction.git
    cd car-price-prediction
    ```
 
@@ -456,7 +456,7 @@ npm start
 
 3. **Add remote origin**:
    ```bash
-   git remote add origin https://github.com/ehsankhani/ai-car-price-prediction.git
+   git remote add origin https://github.com/ehsankhani/AI-Car-Price-Prediction.git
    git branch -M main
    git push -u origin main
    ```
