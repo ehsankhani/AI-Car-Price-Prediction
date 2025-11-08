@@ -2,10 +2,7 @@
 
 A modern, full-stack web application that uses machine learning to predict sports car prices. Built with FastAPI backend and React frontend, featuring a beautiful glass morphism UI with particle effects.
 
-<video width="640" height="360" controls autoplay loop muted>
-  <source src="assets/landing_page.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+🎥 [Watch the landing page demo](assets/landing_page.mp4)
 
 ![Car Prediction Demo](assets/predict.jpg)
 
